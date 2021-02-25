@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Http\Requests\DeviceStoreRequest;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use App\Http\Controllers\BaseController as BaseController;
@@ -10,7 +11,6 @@ use Validator;
 use Illuminate\Support\Str;
 use Illuminate\Support\Arr;
 use App\Http\Resources\Device as DeviceResource;
-
 
 class DeviceController extends BaseController
 {
@@ -22,15 +22,9 @@ class DeviceController extends BaseController
         return $this->sendResponse(DeviceResource::collection($device), 'device retrieved successfully.');
     }
 
-    public function store(Request $request)
+    public function store(DeviceStoreRequest $request)
     {
-        $rules = [
-            'uid' => 'required|string',
-            'appId' => 'required|string',
-            'language' => 'required|string',
-            'OpSys' => 'required|string',
-        ];
-        $validator = Validator::make($request->all(), $rules);
+        $validator = $request->validated();
 
         if ($validator->fails()) {
             return $this->sendError( 'Validation Error.',$validator->errors(),500);

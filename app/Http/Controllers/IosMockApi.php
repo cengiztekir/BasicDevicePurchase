@@ -3,19 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\BaseController as BaseController;
+use App\Http\Requests\CheckPurchaseRequest;
 use Illuminate\Http\Request;
 use Validator;
 use Carbon\Carbon;
 
 class IosMockApi extends BaseController
 {
-    public function CheckPurchase(Request $request)
+    public function CheckPurchase(CheckPurchaseRequest $request)
     {
-        $rules = [
-            'client-token' => 'required|string',
-            'receipt' => 'required|string',
-        ];
-        $validator = Validator::make($request->all(), $rules);
+        $validator = $request->validated();
 
         if ($validator->fails()) {
             return $this->sendError( 'Validation Error.',$validator->errors(),500);

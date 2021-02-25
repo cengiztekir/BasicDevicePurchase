@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\PurchaseStoreRequest;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -20,15 +21,11 @@ class PurchaseController extends BaseController
         return $this->sendResponse(PurchaseResource::collection($device), 'purchase retrieved successfully.');
     }
 
-    public function store(Request $request)
+    public function store(PurchaseStoreRequest $request)
     {
         $ClientTokenName = "client-token";
 
-        $rules = [
-            'client-token' => 'required|string',
-            'receipt' => 'required|string',
-        ];
-        $validator = Validator::make($request->all(), $rules);
+        $validator = $request->validated();
 
         if ($validator->fails()) {
             $purchase = new Purchase([
