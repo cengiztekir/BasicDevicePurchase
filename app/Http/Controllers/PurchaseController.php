@@ -2,152 +2,151 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Repository\PurchaseRepositoryInterface;
+use App\Http\Repository\DeviceRepositoryInterface;
 use App\Http\Requests\PurchaseStoreRequest;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use App\Http\Controllers\BaseController as BaseController;
 use App\Models\Purchase;
+use App\Models\Device;
 use Validator;
 use App\Http\Resources\Purchase as PurchaseResource;
-use App\Models\Device;
 
 class PurchaseController extends BaseController
 {
+    /**
+     * @var PurchaseRepositoryInterface
+     */
+    private $PurcahseRepository;
+    /**
+     * @var DeviceRepositoryInterface
+     */
+    private $DeviceRepository;
+
+    /**
+     * @var Carbon
+     */
+    private $now;
+
+    /**
+     * @var Device
+     */
+    private $Device;
+
+    public function __construct(PurchaseRepositoryInterface $PurchaseRepository, DeviceRepositoryInterface $DeviceRepository,Carbon $now,Device $Device)
+    {
+        $this->PurcahseRepository = $PurchaseRepository;
+        $this->DeviceRepository = $DeviceRepository;
+        $this->now = Carbon::createFromFormat('Y-m-d H:i:s', now(-6))->format('Y-m-d H:i:s');
+    }
+
     public function index()
     {
-        $device = Purchase::all();
+        $purchase = Purchase::all();
 
-        return $this->sendResponse(PurchaseResource::collection($device), 'purchase retrieved successfully.');
+        return $this->sendResponse(PurchaseResource::collection($purchase), 'purchase retrieved successfully.');
     }
 
     public function store(PurchaseStoreRequest $request)
     {
         $ClientTokenName = "client-token";
 
-        $validator = $request->validated();
+        $PurchaseErrorRequest = new Request();
+        $PurchaseErrorRequest->replace([
+            'Status' => 0,
+            'ExpireDate' => $this->now,
+            'ClientToken' => $request->$ClientTokenName,
+            'receipt' => $request->receipt,
+            'Message' =>  null
+        ]);
 
-        if ($validator->fails()) {
-            $purchase = new Purchase([
-                'Status' => 0,
-                'ExpireDate' => Carbon::now(),
-                'ClientToken' => $request->$ClientTokenName,
-                'receipt' => $request->receipt,
-                'Message' =>  'Validation Error'
-            ]);
+        $PurchaseSuccessRequest = new Request();
+        $PurchaseSuccessRequest->replace([
+            'Status' => null,
+            'ExpireDate' => null,
+            'ClientToken' => $request->$ClientTokenName,
+            'receipt' => $request->receipt,
+            'Message' =>  'Purchase has been created successfully.'
+        ]);
 
-            $purchase->save();
-
-            return $this->sendError( 'Validation Error.',$validator->errors(),500);
-        }
+        $request->validated();
 
         try {
+            $this->Device = $this->DeviceRepository->find($request);
 
-            $Device = Device::where('ClientToken', '=', $request->$ClientTokenName)->first();
-
-            if (is_null($Device)) {
-                $purchase = new Purchase([
-                    'Status' => 0,
-                    'ExpireDate' => Carbon::now(),
-                    'ClientToken' => $request->$ClientTokenName,
-                    'receipt' => $request->receipt,
+            if (is_null($this->Device)) {
+                $PurchaseErrorRequest->merge([
                     'Message' =>  'Device not found.'
                 ]);
 
-                $purchase->save();
+                $purchase =$this->PurcahseRepository->create($PurchaseErrorRequest);
 
                 return $this->sendError('Device not found.','',500);
             }
 
-            $PurchaseControl = $this->show($request->$ClientTokenName);
+            $PurchaseControl = $this->PurcahseRepository->find($request);
 
-            if($PurchaseControl->original['success']==true){
-                $now = Carbon::createFromFormat('Y-m-d H:i:s', now(-6))->format('Y-m-d H:i:s');
-                if($PurchaseControl->original['data']['ExpireDate']>=$now){
-                    $purchase = new Purchase([
-                        'Status' => 0,
-                        'ExpireDate' => Carbon::now(),
-                        'ClientToken' => $request->$ClientTokenName,
-                        'receipt' => $request->receipt,
+            if (!is_null($PurchaseControl)){
+                if($PurchaseControl->ExpireDate >= $this->now){
+                    $PurchaseErrorRequest->merge([
                         'Message' =>  'Device has been have subscription'
                     ]);
+                    $this->PurcahseRepository->create($PurchaseErrorRequest);
 
-                    $purchase->save();
                     return $this->sendError('Device has been have subscription','',500);
                 }
             }
 
-            if($Device->OpSys=='Ios'){
-                $response = Http::post('http://localhost:8001/api/IosMockApi', [
-                    'client-token' => $request->$ClientTokenName,
-                    'receipt' => $request->receipt,
-                ]);
-            } else if ($Device->OpSys=='Android') {
-                $response = Http::post('http://localhost:8001/api/AndroidMockApi', [
-                    'client-token' => $request->$ClientTokenName,
-                    'receipt' => $request->receipt,
-                ]);
-            }else {
-                $purchase = new Purchase([
-                    'Status' => 0,
-                    'ExpireDate' => Carbon::now(),
-                    'ClientToken' => $request->$ClientTokenName,
-                    'receipt' => $request->receipt,
+            if(!in_array($this->Device->OpSys, ['Ios', 'Android'])){
+                $PurchaseErrorRequest->merge([
                     'Message' =>  'Invalid Operating System'
                 ]);
+                $this->PurcahseRepository->create($PurchaseErrorRequest);
 
-                $purchase->save();
                 return $this->sendError('Invalid Operating System','',500);
+
             }
+
+            $response = Http::post('http://localhost:8001/api/'. $this->Device->OpSys .'MockApi', [
+                'client-token' => $request->$ClientTokenName,
+                'receipt' => $request->receipt,
+            ]);
 
             $body = json_decode($response->body(), true);
 
             $status = ($body['data']['status']?1:0);
-
-            if($status==1){
-                $purchase = new Purchase([
-                    'Status' => $status,
-                    'ExpireDate' => $body['data']['expire-date'],
-                    'ClientToken' => $request->$ClientTokenName,
-                    'receipt' => $request->receipt,
-                    'Message' =>  'Purchase has been created successfully.'
-                ]);
-
-                $purchase->save();
-
-                return $this->sendResponse(($purchase), 'Purchase has been created successfully.');
-            } else {
-                $purchase = new Purchase([
-                    'Status' => $status,
-                    'ExpireDate' => $body['data']['expire-date'],
-                    'ClientToken' => $request->$ClientTokenName,
-                    'receipt' => $request->receipt,
-                    'Message' =>  'Mock api denied purchase'
-                ]);
-
-                $purchase->save();
-
-                return $this->sendResponse(($purchase), 'Mock api denied purchase');
-            }
-
-        } catch (Throwable $e) {
-            $purchase = new Purchase([
+            $PurchaseSuccessRequest->merge([
                 'Status' => $status,
                 'ExpireDate' => $body['data']['expire-date'],
-                'ClientToken' => $request->$ClientTokenName,
-                'receipt' => $request->receipt,
-                'Message' =>  'System Error'
             ]);
 
-            $purchase->save();
+            if($status!=1){
+                $PurchaseSuccessRequest->merge([
+                    'Message' =>  'Mock api denied purchase'
+                ]);
+            }
+
+            $result = $this->PurcahseRepository->create($PurchaseSuccessRequest);
+            return $PurchaseSuccessRequest;
+
+            return $this->sendResponse(($result), 'Purchase has been created successfully.');
+
+        } catch (Throwable $e) {
+            $PurchaseErrorRequest->merge([
+                'Message' =>  'System Error'
+            ]);
+            $this->PurcahseRepository->create($PurchaseErrorRequest);
+
             return $this->sendError('System Error', ['error' => 'Page Error']);
         }
     }
 
-    public function show($ClientToken)
+    public function show(Request $request)
     {
         try {
-            $Purchase = Purchase::where('ClientToken', '=', $ClientToken)->where('Status','=','1')->last();
+            $Purchase = $this->PurcahseRepository->find($request);
 
             if (is_null($Purchase)) {
                 return $this->sendError('Purchase not found.','',500);
@@ -156,7 +155,7 @@ class PurchaseController extends BaseController
             return $this->sendResponse(new PurchaseResource($Purchase), 'Purchase retrieved successfully.');
 
         } catch (Throwable $e) {
-            return $this->sendError('Purchase not found.','',500);
+            return $this->sendError('System Error', ['error' => 'Page Error']);
         }
     }
 

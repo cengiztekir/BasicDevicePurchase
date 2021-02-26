@@ -15,6 +15,7 @@ class CrateDeviceTable extends Migration
     {
         Schema::create('device', function (Blueprint $table) {
             $table->id();
+            $table->tinyInteger('Status')->default('1');
             $table->string('uid',100)->index();
             $table->string('appId',100);
             $table->string('language',50);

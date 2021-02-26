@@ -2,18 +2,22 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\DeviceStoreRequest;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use App\Http\Controllers\BaseController as BaseController;
 use App\Models\Device;
-use Illuminate\Support\Facades\DB;
 use Validator;
-use Illuminate\Support\Str;
-use Illuminate\Support\Arr;
 use App\Http\Resources\Device as DeviceResource;
+use App\Http\Repository\DeviceRepositoryInterface;
 
 class DeviceController extends BaseController
 {
+
+    private $DeviceRepository;
+
+    public function __construct(DeviceRepositoryInterface $DeviceRepository)
+    {
+        $this->DeviceRepository = $DeviceRepository;
+    }
 
     public function index()
     {
@@ -24,34 +28,13 @@ class DeviceController extends BaseController
 
     public function store(DeviceStoreRequest $request)
     {
-        $validator = $request->validated();
-
-        if ($validator->fails()) {
-            return $this->sendError( 'Validation Error.',$validator->errors(),500);
-        }
+        $request->validated();
 
         try {
-            $RegisterControl = $this->show($request);
+            $RegisterControl = $this->DeviceRepository->find($request);
 
-            if($RegisterControl->original['success']==true){
-                if($RegisterControl->original['data']['appId']==$request->appId){
-                    $result['client-token'] = $RegisterControl->original['data']['ClientToken'];
-                    return $this->sendResponse($result, 'Device has been created successfully.');
-                }
-            }
+            $result = $this->DeviceRepository->create($request,$RegisterControl);
 
-            $ClientToken = str_random(60);
-
-            $device = new device([
-                'uid' => $request->uid,
-                'appId' => $request->appId,
-                'language' => $request->language,
-                'OpSys' => $request->OpSys,
-                'ClientToken' => $ClientToken
-            ]);
-
-            $device->save();
-            $result['client-token'] = $ClientToken;
             return $this->sendResponse($result, 'Device has been created successfully.');
 
         } catch (Throwable $e) {
@@ -62,7 +45,7 @@ class DeviceController extends BaseController
     public function show(Request $request)
     {
         try {
-            $Device = Device::where('uid', '=', $request->uid)->where('appId','=',$request->appId)->first();
+            $Device = $this->DeviceRepository->find($request);
 
             if (is_null($Device)) {
                 return $this->sendError('Device not found.','',500);

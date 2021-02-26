@@ -14,10 +14,6 @@ class IosMockApi extends BaseController
     {
         $validator = $request->validated();
 
-        if ($validator->fails()) {
-            return $this->sendError( 'Validation Error.',$validator->errors(),500);
-        }
-
         try {
 
             $date = Carbon::createFromFormat('Y-m-d H:i:s', now(-6)->addMonths(5))->format('Y-m-d H:i:s');
@@ -26,11 +22,12 @@ class IosMockApi extends BaseController
                 $result['status'] = true;
                 $result['expire-date'] = $date;
                 return $this->sendResponse( $result,'');
-            }else{
-                $result['status'] = false;
-                $result['expire-date'] = $date;
-                return $this->sendResponse( $result,'');
             }
+
+            $result['status'] = false;
+            $result['expire-date'] = $date;
+            return $this->sendResponse( $result,'');
+
         } catch (Throwable $e) {
             return $this->sendError("System Error", ['error' => 'Page Error']);
         }
