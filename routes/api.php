@@ -26,6 +26,10 @@ Route::post('IosMockApi', [IosMockApi::class, 'CheckPurchase']);
 Route::post('AndroidMockApi', [AndroidMockApi::class, 'CheckPurchase']);
 
 Route::middleware('auth:api')->group( function () {
-    Route::resource('purchase', PurchaseController::class);
-    Route::resource('register', DeviceController::class);
+    Route::resource('purchase', PurchaseController::class)->only([
+        'index','store', 'show'
+    ]);
+    Route::resource('register', DeviceController::class)->only([
+        'index','store', 'show'
+    ]);
 });

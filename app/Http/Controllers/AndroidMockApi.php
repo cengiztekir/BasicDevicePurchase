@@ -15,7 +15,7 @@ class AndroidMockApi extends BaseController
 
         try {
 
-            $date = Carbon::createFromFormat('Y-m-d H:i:s', now(-6)->addMonths(5))->format('Y-m-d H:i:s');
+            $date = Carbon::now(-6)->addMonths(5)->format('Y-m-d H:i:s');
 
             if ($request->receipt % 2 == 1) {
                 $result['status'] = true;

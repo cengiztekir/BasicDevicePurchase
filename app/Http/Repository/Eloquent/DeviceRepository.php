@@ -43,7 +43,7 @@ class DeviceRepository extends BaseRepository implements DeviceRepositoryInterfa
 
         $ClientToken = str_random(60);
 
-        $device = new Device([
+        $Device = new Device([
             'uid' => $attributes->uid,
             'appId' => $attributes->appId,
             'language' => $attributes->language,
@@ -51,9 +51,9 @@ class DeviceRepository extends BaseRepository implements DeviceRepositoryInterfa
             'ClientToken' => $ClientToken
         ]);
 
-        $device->save();
+        $Device->save();
 
-        return $device;
+        return $Device;
     }
 
     /**

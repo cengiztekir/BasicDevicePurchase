@@ -33,7 +33,7 @@ class PurchaseRepository extends BaseRepository implements PurchaseRepositoryInt
      */
     public function create(Request $attributes,?Model $attrModel=null): Model
     {
-        $purchase = new Purchase([
+        $Purchase = new Purchase([
             'Status' => $attributes->Status,
             'ExpireDate' => $attributes->ExpireDate,
             'ClientToken' => $attributes->ClientToken,
@@ -41,9 +41,9 @@ class PurchaseRepository extends BaseRepository implements PurchaseRepositoryInt
             'Message' =>  $attributes->Message,
         ]);
 
-        $purchase->save();
+        $Purchase->save();
 
-        return $purchase;
+        return $Purchase;
     }
 
     /**

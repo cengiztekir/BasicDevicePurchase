@@ -39,14 +39,14 @@ class PurchaseController extends BaseController
     {
         $this->PurcahseRepository = $PurchaseRepository;
         $this->DeviceRepository = $DeviceRepository;
-        $this->now = Carbon::createFromFormat('Y-m-d H:i:s', now(-6))->format('Y-m-d H:i:s');
+        $this->now = Carbon::now(-6)->format('Y-m-d H:i:s');
     }
 
     public function index()
     {
-        $purchase = Purchase::all();
+        $Purchase = Purchase::all();
 
-        return $this->sendResponse(PurchaseResource::collection($purchase), 'purchase retrieved successfully.');
+        return $this->sendResponse(PurchaseResource::collection($Purchase), 'Purchase retrieved successfully.');
     }
 
     public function store(PurchaseStoreRequest $request)
@@ -81,7 +81,7 @@ class PurchaseController extends BaseController
                     'Message' =>  'Device not found.'
                 ]);
 
-                $purchase =$this->PurcahseRepository->create($PurchaseErrorRequest);
+                $this->PurcahseRepository->create($PurchaseErrorRequest);
 
                 return $this->sendError('Device not found.','',500);
             }

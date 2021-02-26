@@ -21,9 +21,9 @@ class DeviceController extends BaseController
 
     public function index()
     {
-        $device = Device::all();
+        $Device = Device::all();
 
-        return $this->sendResponse(DeviceResource::collection($device), 'device retrieved successfully.');
+        return $this->sendResponse(DeviceResource::collection($Device), 'Device retrieved successfully.');
     }
 
     public function store(DeviceStoreRequest $request)
@@ -58,12 +58,12 @@ class DeviceController extends BaseController
         }
     }
 
-    public function update(Request $request, Device $device)
+    public function update(Request $request, Device $Device)
     {
 
     }
 
-    public function destroy(Device $device)
+    public function destroy(Device $Device)
     {
 
     }
