@@ -129,7 +129,6 @@ class PurchaseController extends BaseController
             }
 
             $result = $this->PurcahseRepository->create($PurchaseSuccessRequest);
-            return $PurchaseSuccessRequest;
 
             return $this->sendResponse(($result), 'Purchase has been created successfully.');
 
