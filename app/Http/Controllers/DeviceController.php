@@ -28,10 +28,11 @@ class DeviceController extends BaseController
 
     public function store(DeviceStoreRequest $request)
     {
-        $request->validated();
-
         try {
+            $request->validated();
+
             $RegisterControl = $this->DeviceRepository->find($request);
+            return $RegisterControl;
 
             $result = $this->DeviceRepository->create($request,$RegisterControl);
 

@@ -33,17 +33,13 @@ class PurchaseRepository extends BaseRepository implements PurchaseRepositoryInt
      */
     public function create(Request $attributes,?Model $attrModel=null): Model
     {
-        $Purchase = new Purchase([
+        return Purchase::query()->create([
             'Status' => $attributes->Status,
             'ExpireDate' => $attributes->ExpireDate,
             'ClientToken' => $attributes->ClientToken,
             'receipt' => $attributes->receipt,
             'Message' =>  $attributes->Message,
         ]);
-
-        $Purchase->save();
-
-        return $Purchase;
     }
 
     /**
@@ -53,8 +49,8 @@ class PurchaseRepository extends BaseRepository implements PurchaseRepositoryInt
     public function find(Request $attributes): ?Model
     {
         $ClientTokenName = "client-token";
-        $Purchase = Purchase::where('ClientToken', '=', $attributes->$ClientTokenName)->where('Status','=','1')->first();
-
-        return $Purchase;
+        return Purchase::query()->where('Status', '=', '1')
+            ->where('ClientToken', '=', $attributes->$ClientTokenName)
+            ->searchable();
     }
 }

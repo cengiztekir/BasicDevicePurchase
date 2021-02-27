@@ -20,7 +20,7 @@ class CrateDeviceTable extends Migration
             $table->string('appId',100);
             $table->string('language',50);
             $table->string('OpSys',100);
-            $table->string('ClientToken',60);
+            $table->string('ClientToken',60)->index();
             $table->unique(['uid', 'appId']);
             $table->timestamps();
         });

@@ -32,28 +32,23 @@ class DeviceRepository extends BaseRepository implements DeviceRepositoryInterfa
      * @param Request $attributes
      * @return Model
      */
-    public function create(Request $attributes,?Model $attrModel=null): Model{
+    public function create(Request $attributes,?Model $attrModel=null): Model
+    {
+        if(!is_null($attrModel) && $attrModel->appId==$attributes->appId){
+            $result['client-token'] = $attrModel->ClientToken;
 
-        if(!is_null($attrModel)){
-            if($attrModel->appId==$attributes->appId){
-                $result['client-token'] = $attrModel->ClientToken;
-                return $attrModel;
-            }
+            return $attrModel;
         }
 
         $ClientToken = str_random(60);
 
-        $Device = new Device([
+        return Device::query()->create([
             'uid' => $attributes->uid,
             'appId' => $attributes->appId,
             'language' => $attributes->language,
             'OpSys' => $attributes->OpSys,
             'ClientToken' => $ClientToken
         ]);
-
-        $Device->save();
-
-        return $Device;
     }
 
     /**
@@ -64,16 +59,16 @@ class DeviceRepository extends BaseRepository implements DeviceRepositoryInterfa
     {
         $ClientTokenName = "client-token";
 
-        $Device = Device::where('Status', '=', '1');
-        if(!is_null($attributes->uid)){
-            $Device->where('uid', '=', $attributes->uid);
-        }
-        if(!is_null($attributes->appId)){
-            $Device->where('appId', '=', $attributes->appId);
-        }
-        if(!is_null($attributes->$ClientTokenName)){
-            $Device->where('ClientToken', '=', $attributes->$ClientTokenName);
-        }
-        return $Device->first();
+        return Device::query()->where('Status', '=', '1')
+            ->when($attributes->uid, function ($query) use ($attributes) {
+                $query->where('uid', '=', $attributes->uid);
+            })
+            ->when($attributes->appId, function ($query) use ($attributes) {
+                $query->where('appId', '=', $attributes->appId);
+            })
+            ->when($attributes->$ClientTokenName, function ($query) use ($ClientTokenName, $attributes) {
+                $query->where('ClientToken', '=', $attributes->$ClientTokenName);
+            })
+            ->searchable();
     }
 }

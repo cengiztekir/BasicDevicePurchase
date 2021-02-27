@@ -3,12 +3,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Laravel\Scout\Searchable;
 
 class Purchase extends Model
 {
-    use HasFactory;
+    use HasFactory,Searchable;
 
     protected $table = "purchase";
+
+    public function searchableAs()
+    {
+        return 'items_index';
+    }
 
     protected $fillable = [
         'Status',
@@ -17,4 +23,12 @@ class Purchase extends Model
         'receipt',
         'Message',
     ];
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'Status' => $this->Status,
+            'ClientToken' => $this->ClientToken,
+        ];
+    }
 }
