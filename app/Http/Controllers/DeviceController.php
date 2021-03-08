@@ -32,7 +32,6 @@ class DeviceController extends BaseController
             $request->validated();
 
             $RegisterControl = $this->DeviceRepository->find($request);
-            return $RegisterControl;
 
             $result = $this->DeviceRepository->create($request,$RegisterControl);
 
